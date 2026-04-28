@@ -62,7 +62,14 @@ mkdir -p data logs
 cp setup/traccar.xml traccar.xml
 ```
 
-**Windows**
+**Windows (PowerShell)**
+```powershell
+New-Item -ItemType Junction -Path web -Target traccar-web\build
+New-Item -ItemType Directory -Force -Path data, logs
+Copy-Item setup\traccar.xml traccar.xml
+```
+
+**Windows (CMD — run as Administrator)**
 ```cmd
 mklink /D web traccar-web\build
 mkdir data
@@ -70,7 +77,7 @@ mkdir logs
 copy setup\traccar.xml traccar.xml
 ```
 
-> On Windows, `mklink` requires running the terminal as **Administrator**.
+> Use PowerShell if `mklink` is not recognized. Junction links work the same way and require no elevated permissions.
 
 ---
 
