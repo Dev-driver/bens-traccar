@@ -99,6 +99,35 @@ Logs are written to `logs/tracker-server.log`.
 
 ---
 
+## Step 6 — Stop the server
+
+**macOS / Linux**
+```bash
+pkill -f "tracker-server.jar"
+```
+
+**Windows (PowerShell)**
+```powershell
+# Find the process
+Get-Process -Name java | Where-Object { $_.CommandLine -like "*tracker-server*" }
+
+# Kill it
+Get-Process -Name java | Where-Object { $_.CommandLine -like "*tracker-server*" } | Stop-Process -Force
+```
+
+**Windows (CMD)**
+```cmd
+:: Find the process
+netstat -ano | findstr :8082
+
+:: Kill it by PID (replace 1234 with the actual PID)
+taskkill /PID 1234 /F
+```
+
+> Alternatively, simply close the terminal window where the server is running.
+
+---
+
 ## Notes
 
 - All commands in steps 1–5 assume you are inside the `traccar/` subdirectory.
