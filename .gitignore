@@ -1,0 +1,9 @@
+# Build artifacts (inside submodules, not tracked here)
+traccar/target/
+traccar/build/
+traccar/data/
+traccar/logs/
+traccar/traccar.xml
+traccar/web
+traccar-web/node_modules/
+traccar-web/build/
