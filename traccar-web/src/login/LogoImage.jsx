@@ -1,7 +1,6 @@
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { makeStyles } from 'tss-react/mui';
-import Logo from '../resources/images/logo.svg?react';
 
 const useStyles = makeStyles()((theme) => ({
   image: {
@@ -14,7 +13,7 @@ const useStyles = makeStyles()((theme) => ({
   },
 }));
 
-const LogoImage = ({ color }) => {
+const LogoImage = () => {
   const theme = useTheme();
   const { classes } = useStyles();
 
@@ -29,7 +28,7 @@ const LogoImage = ({ color }) => {
     }
     return <img className={classes.image} src={logo} alt="" />;
   }
-  return <Logo className={classes.image} style={{ color }} />;
+  return <img className={classes.image} src="/logo_bens.png" alt="BENS" />;
 };
 
 export default LogoImage;

@@ -1,5 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { IconButton, Paper, Slider, Toolbar, Typography } from '@mui/material';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  IconButton,
+  Paper,
+  Slider,
+  Toolbar,
+  Typography,
+  Box,
+  Chip,
+  Tooltip,
+} from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import TuneIcon from '@mui/icons-material/Tune';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -7,6 +16,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
+import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../map/core/MapView';
@@ -24,6 +34,16 @@ import MapScale from '../map/MapScale';
 import BackIcon from '../common/components/BackIcon';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import MapOverlay from '../map/overlay/MapOverlay';
+
+const STOP_MIN_DURATION_MS = 30 * 60 * 1000;
+const STOP_SPEED_THRESHOLD = 1;
+
+const formatStopDuration = (ms) => {
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+};
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -72,11 +92,46 @@ const useStyles = makeStyles()((theme) => ({
       marginTop: theme.spacing(1),
     },
   },
+  stopBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    backgroundColor: 'rgba(198, 40, 40, 0.08)',
+    border: '1px solid rgba(198, 40, 40, 0.3)',
+    borderRadius: theme.spacing(1),
+    padding: theme.spacing(0.75, 1.5),
+    marginTop: theme.spacing(1),
+  },
+  stopList: {
+    marginTop: theme.spacing(1.5),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(0.75),
+    maxHeight: 180,
+    overflowY: 'auto',
+  },
+  stopItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    padding: theme.spacing(0.75, 1),
+    borderRadius: theme.spacing(1),
+    cursor: 'pointer',
+    border: '1px solid rgba(198, 40, 40, 0.2)',
+    backgroundColor: 'rgba(198, 40, 40, 0.04)',
+    '&:hover': {
+      backgroundColor: 'rgba(198, 40, 40, 0.1)',
+    },
+  },
+  stopItemActive: {
+    backgroundColor: 'rgba(198, 40, 40, 0.15)',
+    border: '1px solid rgba(198, 40, 40, 0.5)',
+  },
 }));
 
 const ReplayPage = () => {
   const t = useTranslation();
-  const { classes } = useStyles();
+  const { classes, cx } = useStyles();
   const navigate = useNavigate();
   const timerRef = useRef();
 
@@ -104,6 +159,55 @@ const ReplayPage = () => {
     }
     return null;
   });
+
+  const stops = useMemo(() => {
+    if (!positions.length) return [];
+    const result = [];
+    let stopStartIndex = null;
+
+    positions.forEach((pos, i) => {
+      const isStopped = (pos.speed ?? 0) < STOP_SPEED_THRESHOLD;
+      if (isStopped && stopStartIndex === null) {
+        stopStartIndex = i;
+      } else if (!isStopped && stopStartIndex !== null) {
+        const duration =
+          new Date(positions[i - 1].fixTime).getTime() -
+          new Date(positions[stopStartIndex].fixTime).getTime();
+        if (duration >= STOP_MIN_DURATION_MS) {
+          result.push({
+            start: stopStartIndex,
+            end: i - 1,
+            startTime: positions[stopStartIndex].fixTime,
+            endTime: positions[i - 1].fixTime,
+            duration,
+          });
+        }
+        stopStartIndex = null;
+      }
+    });
+
+    if (stopStartIndex !== null) {
+      const duration =
+        new Date(positions[positions.length - 1].fixTime).getTime() -
+        new Date(positions[stopStartIndex].fixTime).getTime();
+      if (duration >= STOP_MIN_DURATION_MS) {
+        result.push({
+          start: stopStartIndex,
+          end: positions.length - 1,
+          startTime: positions[stopStartIndex].fixTime,
+          endTime: positions[positions.length - 1].fixTime,
+          duration,
+        });
+      }
+    }
+
+    return result;
+  }, [positions]);
+
+  const currentStop = useMemo(
+    () => stops.find((s) => index >= s.start && index <= s.end),
+    [stops, index],
+  );
 
   useEffect(() => {
     if (!from && !to) {
@@ -167,6 +271,8 @@ const ReplayPage = () => {
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
 
+  const maxIndex = Math.max(positions.length - 1, 1);
+
   return (
     <div className={classes.root}>
       <MapView>
@@ -214,14 +320,43 @@ const ReplayPage = () => {
               <Typography variant="subtitle1" align="center">
                 {deviceName}
               </Typography>
-              <Slider
-                className={classes.slider}
-                max={positions.length - 1}
-                step={null}
-                marks={positions.map((_, index) => ({ value: index }))}
-                value={index}
-                onChange={(_, index) => setIndex(index)}
-              />
+
+              {/* Slider with stop zones overlay */}
+              <Box position="relative" pt={1}>
+                <Slider
+                  className={classes.slider}
+                  max={positions.length - 1}
+                  step={null}
+                  marks={positions.map((_, i) => ({ value: i }))}
+                  value={index}
+                  onChange={(_, i) => setIndex(i)}
+                />
+                {/* Stop zone bars under slider */}
+                {stops.map((stop, i) => (
+                  <Tooltip
+                    key={i}
+                    title={`Arrêt ${i + 1} — ${formatStopDuration(stop.duration)}`}
+                    placement="top"
+                  >
+                    <Box
+                      onClick={() => setIndex(stop.start)}
+                      sx={{
+                        position: 'absolute',
+                        left: `${(stop.start / maxIndex) * 100}%`,
+                        width: `${((stop.end - stop.start) / maxIndex) * 100}%`,
+                        bottom: 0,
+                        height: 5,
+                        bgcolor: '#C62828',
+                        borderRadius: 1,
+                        opacity: 0.75,
+                        cursor: 'pointer',
+                        zIndex: 1,
+                      }}
+                    />
+                  </Tooltip>
+                ))}
+              </Box>
+
               <div className={classes.controls}>
                 {`${index + 1}/${positions.length}`}
                 <IconButton
@@ -244,6 +379,61 @@ const ReplayPage = () => {
                 </IconButton>
                 {formatTime(positions[index].fixTime, 'seconds')}
               </div>
+
+              {/* Current stop banner */}
+              {currentStop && (
+                <Box className={classes.stopBanner}>
+                  <PauseCircleFilledIcon sx={{ color: '#C62828', fontSize: 18 }} />
+                  <Typography variant="caption" sx={{ color: '#C62828', fontWeight: 600 }}>
+                    {`Arrêt en cours — ${formatStopDuration(currentStop.duration)}`}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Stop list */}
+              {stops.length > 0 && (
+                <Box mt={1.5}>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  >
+                    {`Arrêts > 30 min (${stops.length})`}
+                  </Typography>
+                  <Box className={classes.stopList}>
+                    {stops.map((stop, i) => (
+                      <Box
+                        key={i}
+                        className={cx(
+                          classes.stopItem,
+                          currentStop === stop && classes.stopItemActive,
+                        )}
+                        onClick={() => setIndex(stop.start)}
+                      >
+                        <PauseCircleFilledIcon sx={{ color: '#C62828', fontSize: 16, flexShrink: 0 }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="caption" display="block" noWrap sx={{ fontWeight: 600 }}>
+                            {`${formatTime(stop.startTime, 'minutes')} → ${formatTime(stop.endTime, 'minutes')}`}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#888' }}>
+                            {formatStopDuration(stop.duration)}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={`#${i + 1}`}
+                          size="small"
+                          sx={{
+                            bgcolor: '#C62828',
+                            color: '#fff',
+                            height: 18,
+                            fontSize: '0.65rem',
+                            flexShrink: 0,
+                          }}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </>
           )}
           <div style={{ display: loaded ? 'none' : 'block' }}>

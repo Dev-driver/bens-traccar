@@ -73,6 +73,20 @@ const App = () => {
       <CachingController />
       <UpdateController />
       <MotionController />
+      <img
+        src="/logo_bens.png"
+        alt=""
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          width: 140,
+          opacity: 0.7,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          zIndex: 0,
+        }}
+      />
       <div className={classes.page}>
         <Outlet />
       </div>
