@@ -161,7 +161,6 @@ const ReplayPage = () => {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedStopIndex, setSelectedStopIndex] = useState(null);
-  const [stopCardMinimized, setStopCardMinimized] = useState(false);
 
   const loaded = Boolean(from && to && !loading && positions.length);
 
@@ -417,6 +416,67 @@ const ReplayPage = () => {
                 </Box>
               )}
 
+              {/* Selected stop details */}
+              {selectedStopIndex !== null && stops[selectedStopIndex] && (() => {
+                const stop = stops[selectedStopIndex];
+                const pos = positions[stop.start];
+                return (
+                  <Box
+                    mt={1.5}
+                    sx={{
+                      borderTop: '2px solid #C62828',
+                      pt: 1,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(198,40,40,0.04)',
+                      px: 1,
+                      pb: 1,
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+                      <Box display="flex" alignItems="center" gap={0.75}>
+                        <Box
+                          sx={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: '50%',
+                            bgcolor: '#C62828',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 11, lineHeight: 1 }}>P</Typography>
+                        </Box>
+                        <Typography variant="caption" fontWeight={700}>
+                          {`Arrêt #${selectedStopIndex + 1} — `}
+                          <span style={{ color: '#C62828' }}>{formatStopDuration(stop.duration)}</span>
+                        </Typography>
+                      </Box>
+                      <IconButton size="small" sx={{ p: 0.25 }} onClick={() => setSelectedStopIndex(null)}>
+                        <Typography sx={{ fontSize: 13, color: '#888', lineHeight: 1 }}>✕</Typography>
+                      </IconButton>
+                    </Box>
+                    <Box display="flex" flexDirection="column" gap={0.25}>
+                      <Typography variant="caption" display="block">
+                        <b>Début :</b> {formatTime(stop.startTime, 'minutes')}
+                      </Typography>
+                      <Typography variant="caption" display="block">
+                        <b>Fin :</b> {formatTime(stop.endTime, 'minutes')}
+                      </Typography>
+                      <Typography variant="caption" display="block">
+                        <b>Position :</b> {pos.latitude.toFixed(5)}, {pos.longitude.toFixed(5)}
+                      </Typography>
+                      {pos.address && (
+                        <Typography variant="caption" display="block">
+                          <b>Adresse :</b> {pos.address}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                );
+              })()}
+
               {/* Stop list */}
               {stops.length > 0 && (
                 <Box mt={1.5}>
@@ -432,9 +492,9 @@ const ReplayPage = () => {
                         key={i}
                         className={cx(
                           classes.stopItem,
-                          currentStop === stop && classes.stopItemActive,
+                          (currentStop === stop || selectedStopIndex === i) && classes.stopItemActive,
                         )}
-                        onClick={() => setIndex(stop.start)}
+                        onClick={() => { setIndex(stop.start); setSelectedStopIndex(i); }}
                       >
                         <PauseCircleFilledIcon sx={{ color: '#C62828', fontSize: 16, flexShrink: 0 }} />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -476,86 +536,6 @@ const ReplayPage = () => {
           disableActions
         />
       )}
-      {selectedStopIndex !== null && stops[selectedStopIndex] && (() => {
-        const stop = stops[selectedStopIndex];
-        const pos = positions[stop.start];
-        return (
-          <Paper
-            elevation={6}
-            sx={{
-              position: 'fixed',
-              bottom: 80,
-              right: 16,
-              zIndex: 10,
-              p: stopCardMinimized ? '6px 10px' : 2,
-              minWidth: stopCardMinimized ? 'unset' : 230,
-              maxWidth: stopCardMinimized ? 'unset' : 280,
-              borderTop: '3px solid #C62828',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1}>
-              <Box
-                sx={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  bgcolor: '#C62828',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12, lineHeight: 1 }}>P</Typography>
-              </Box>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ flexGrow: 1 }}>
-                {`#${selectedStopIndex + 1}`}
-                {stopCardMinimized && (
-                  <Typography component="span" variant="caption" sx={{ ml: 0.5, color: '#C62828', fontWeight: 600 }}>
-                    {` — ${formatStopDuration(stop.duration)}`}
-                  </Typography>
-                )}
-              </Typography>
-              <IconButton size="small" onClick={() => setStopCardMinimized((v) => !v)} sx={{ p: 0.25 }}>
-                <Typography sx={{ fontSize: 14, lineHeight: 1, color: '#888' }}>
-                  {stopCardMinimized ? '▲' : '▼'}
-                </Typography>
-              </IconButton>
-              <IconButton size="small" onClick={() => { setSelectedStopIndex(null); setStopCardMinimized(false); }} sx={{ p: 0.25 }}>
-                <Typography sx={{ fontSize: 14, lineHeight: 1, color: '#888' }}>✕</Typography>
-              </IconButton>
-            </Box>
-            {!stopCardMinimized && (
-              <Box display="flex" flexDirection="column" gap={0.5} mt={1}>
-                <Typography variant="caption" display="block">
-                  <b>Durée :</b>{' '}
-                  <span style={{ color: '#C62828', fontWeight: 600 }}>{formatStopDuration(stop.duration)}</span>
-                </Typography>
-                <Typography variant="caption" display="block">
-                  <b>Début :</b> {formatTime(stop.startTime, 'minutes')}
-                </Typography>
-                <Typography variant="caption" display="block">
-                  <b>Fin :</b> {formatTime(stop.endTime, 'minutes')}
-                </Typography>
-                <Typography variant="caption" display="block">
-                  <b>Position :</b> {pos.latitude.toFixed(5)}, {pos.longitude.toFixed(5)}
-                </Typography>
-                {pos.speed !== undefined && (
-                  <Typography variant="caption" display="block">
-                    <b>Vitesse :</b> {Math.round(pos.speed * 1.852)} km/h
-                  </Typography>
-                )}
-                {pos.address && (
-                  <Typography variant="caption" display="block" noWrap>
-                    <b>Adresse :</b> {pos.address}
-                  </Typography>
-                )}
-              </Box>
-            )}
-          </Paper>
-        );
-      })()}
     </div>
   );
 };
