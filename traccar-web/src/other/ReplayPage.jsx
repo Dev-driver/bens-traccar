@@ -9,6 +9,7 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
+
 import { makeStyles } from 'tss-react/mui';
 import TuneIcon from '@mui/icons-material/Tune';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -23,6 +24,7 @@ import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
 import MapRoutePoints from '../map/MapRoutePoints';
 import MapPositions from '../map/MapPositions';
+import MapStopMarkers from '../map/MapStopMarkers';
 import { formatTime } from '../common/util/formatter';
 import ReportFilter, { updateReportParams } from '../reports/components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -147,6 +149,7 @@ const ReplayPage = () => {
   const to = searchParams.get('to');
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedStopIndex, setSelectedStopIndex] = useState(null);
 
   const loaded = Boolean(from && to && !loading && positions.length);
 
@@ -285,6 +288,13 @@ const ReplayPage = () => {
             positions={[positions[index]]}
             onMarkerClick={onMarkerClick}
             titleField="fixTime"
+          />
+        )}
+        {stops.length > 0 && (
+          <MapStopMarkers
+            stops={stops}
+            positions={positions}
+            onStopClick={setSelectedStopIndex}
           />
         )}
       </MapView>
@@ -449,6 +459,74 @@ const ReplayPage = () => {
           disableActions
         />
       )}
+      {selectedStopIndex !== null && stops[selectedStopIndex] && (() => {
+        const stop = stops[selectedStopIndex];
+        const pos = positions[stop.start];
+        return (
+          <Paper
+            elevation={6}
+            sx={{
+              position: 'fixed',
+              bottom: 80,
+              right: 16,
+              zIndex: 10,
+              p: 2,
+              minWidth: 230,
+              maxWidth: 280,
+              borderTop: '3px solid #C62828',
+            }}
+          >
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Box
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    bgcolor: '#C62828',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, lineHeight: 1 }}>P</Typography>
+                </Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {`Arrêt #${selectedStopIndex + 1}`}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={() => setSelectedStopIndex(null)}>
+                <Typography sx={{ fontSize: 16, lineHeight: 1, color: '#888' }}>✕</Typography>
+              </IconButton>
+            </Box>
+            <Box display="flex" flexDirection="column" gap={0.5}>
+              <Typography variant="caption" display="block">
+                <b>Durée :</b>{' '}
+                <span style={{ color: '#C62828', fontWeight: 600 }}>{formatStopDuration(stop.duration)}</span>
+              </Typography>
+              <Typography variant="caption" display="block">
+                <b>Début :</b> {formatTime(stop.startTime, 'minutes')}
+              </Typography>
+              <Typography variant="caption" display="block">
+                <b>Fin :</b> {formatTime(stop.endTime, 'minutes')}
+              </Typography>
+              <Typography variant="caption" display="block">
+                <b>Position :</b> {pos.latitude.toFixed(5)}, {pos.longitude.toFixed(5)}
+              </Typography>
+              {pos.speed !== undefined && (
+                <Typography variant="caption" display="block">
+                  <b>Vitesse :</b> {Math.round(pos.speed * 1.852)} km/h
+                </Typography>
+              )}
+              {pos.address && (
+                <Typography variant="caption" display="block" noWrap>
+                  <b>Adresse :</b> {pos.address}
+                </Typography>
+              )}
+            </Box>
+          </Paper>
+        );
+      })()}
     </div>
   );
 };
