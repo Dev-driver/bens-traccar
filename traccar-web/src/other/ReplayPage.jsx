@@ -38,7 +38,18 @@ import fetchOrThrow from '../common/util/fetchOrThrow';
 import MapOverlay from '../map/overlay/MapOverlay';
 
 const STOP_MIN_DURATION_MS = 30 * 60 * 1000;
-const STOP_SPEED_THRESHOLD = 1;
+const STOP_SPEED_THRESHOLD = 2; // knots
+const STOP_MOVEMENT_THRESHOLD_M = 50; // metres before a stop is considered ended
+
+const haversineDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 const formatStopDuration = (ms) => {
   const totalMinutes = Math.floor(ms / 60000);
@@ -166,38 +177,43 @@ const ReplayPage = () => {
   const stops = useMemo(() => {
     if (!positions.length) return [];
     const result = [];
-    let stopStartIndex = null;
+    let stopStart = null; // { index, lat, lon }
 
     positions.forEach((pos, i) => {
-      const isStopped = (pos.speed ?? 0) < STOP_SPEED_THRESHOLD;
-      if (isStopped && stopStartIndex === null) {
-        stopStartIndex = i;
-      } else if (!isStopped && stopStartIndex !== null) {
+      const isSlow = (pos.speed ?? 0) < STOP_SPEED_THRESHOLD;
+
+      if (!stopStart) {
+        if (isSlow) stopStart = { index: i, lat: pos.latitude, lon: pos.longitude };
+        return;
+      }
+
+      const dist = haversineDistance(stopStart.lat, stopStart.lon, pos.latitude, pos.longitude);
+      if (dist > STOP_MOVEMENT_THRESHOLD_M) {
         const duration =
           new Date(positions[i - 1].fixTime).getTime() -
-          new Date(positions[stopStartIndex].fixTime).getTime();
+          new Date(positions[stopStart.index].fixTime).getTime();
         if (duration >= STOP_MIN_DURATION_MS) {
           result.push({
-            start: stopStartIndex,
+            start: stopStart.index,
             end: i - 1,
-            startTime: positions[stopStartIndex].fixTime,
+            startTime: positions[stopStart.index].fixTime,
             endTime: positions[i - 1].fixTime,
             duration,
           });
         }
-        stopStartIndex = null;
+        stopStart = isSlow ? { index: i, lat: pos.latitude, lon: pos.longitude } : null;
       }
     });
 
-    if (stopStartIndex !== null) {
+    if (stopStart) {
       const duration =
         new Date(positions[positions.length - 1].fixTime).getTime() -
-        new Date(positions[stopStartIndex].fixTime).getTime();
+        new Date(positions[stopStart.index].fixTime).getTime();
       if (duration >= STOP_MIN_DURATION_MS) {
         result.push({
-          start: stopStartIndex,
+          start: stopStart.index,
           end: positions.length - 1,
-          startTime: positions[stopStartIndex].fixTime,
+          startTime: positions[stopStart.index].fixTime,
           endTime: positions[positions.length - 1].fixTime,
           duration,
         });
