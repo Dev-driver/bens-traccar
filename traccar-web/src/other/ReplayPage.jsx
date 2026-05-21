@@ -37,7 +37,7 @@ import BackIcon from '../common/components/BackIcon';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import MapOverlay from '../map/overlay/MapOverlay';
 
-const STOP_MIN_DURATION_MS = 30 * 60 * 1000;
+const STOP_MIN_DURATION_MS = 5 * 60 * 1000;
 const STOP_SPEED_THRESHOLD = 2; // knots
 const STOP_MOVEMENT_THRESHOLD_M = 50; // metres before a stop is considered ended
 
@@ -484,7 +484,7 @@ const ReplayPage = () => {
                     variant="caption"
                     sx={{ fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   >
-                    {`Arrêts > 30 min (${stops.length})`}
+                    {`Arrêts > 5 min (${stops.length})`}
                   </Typography>
                   <Box className={classes.stopList}>
                     {stops.map((stop, i) => (
