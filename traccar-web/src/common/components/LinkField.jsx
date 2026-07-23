@@ -17,7 +17,6 @@ const LinkField = ({
 }) => {
   const t = useTranslation();
   const [active, setActive] = useState(false);
-  const [open, setOpen] = useState(false);
   const [items, setItems] = useState();
   const [linked, setLinked] = useState();
   const [updated, setUpdated] = useState(false);
@@ -96,12 +95,7 @@ const LinkField = ({
         )}
         value={(items && linked) || []}
         onChange={(_, value) => onChange(value)}
-        open={open}
-        onOpen={() => {
-          setOpen(true);
-          setActive(true);
-        }}
-        onClose={() => setOpen(false)}
+        onOpen={() => setActive(true)}
         multiple
       />
       <Snackbar
