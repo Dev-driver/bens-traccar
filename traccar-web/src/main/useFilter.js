@@ -53,7 +53,7 @@ export default (
     }
     setFilteredDevices(filtered);
     setFilteredPositions(
-      filterMap
+      filterMap || keyword.trim()
         ? filtered.map((device) => positions[device.id]).filter(Boolean)
         : Object.values(positions),
     );
