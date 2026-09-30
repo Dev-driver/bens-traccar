@@ -36,14 +36,6 @@ import QrCodeDialog from '../common/components/QrCodeDialog';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 
 const useStyles = makeStyles()((theme) => ({
-  options: {
-    position: 'fixed',
-    top: theme.spacing(2),
-    right: theme.spacing(2),
-    display: 'flex',
-    flexDirection: 'row',
-    gap: theme.spacing(1),
-  },
   container: {
     display: 'flex',
     flexDirection: 'column',
@@ -156,39 +148,42 @@ const LoginPage = () => {
   }, []);
 
   return (
-    <LoginLayout>
-      <div className={classes.options}>
-        {nativeEnvironment && changeEnabled && (
-          <IconButton color="primary" onClick={() => navigate('/change-server')}>
-            <Tooltip
-              title={`${t('settingsServer')}: ${window.location.hostname}`}
-              open={showServerTooltip}
-              arrow
-            >
-              <VpnLockIcon />
-            </Tooltip>
-          </IconButton>
-        )}
-        {!nativeEnvironment && (
-          <IconButton color="primary" onClick={() => setShowQr(true)}>
-            <QrCode2Icon />
-          </IconButton>
-        )}
-        {languageEnabled && (
-          <FormControl>
-            <Select value={language} onChange={(e) => setLocalLanguage(e.target.value)}>
-              {languageList.map((it) => (
-                <MenuItem key={it.code} value={it.code}>
-                  <Box component="span" sx={{ mr: 1 }}>
-                    <CountryFlag countryCode={it.country} svg />
-                  </Box>
-                  {it.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-      </div>
+    <LoginLayout
+      options={
+        <>
+          {nativeEnvironment && changeEnabled && (
+            <IconButton color="primary" onClick={() => navigate('/change-server')}>
+              <Tooltip
+                title={`${t('settingsServer')}: ${window.location.hostname}`}
+                open={showServerTooltip}
+                arrow
+              >
+                <VpnLockIcon />
+              </Tooltip>
+            </IconButton>
+          )}
+          {!nativeEnvironment && (
+            <IconButton color="primary" onClick={() => setShowQr(true)}>
+              <QrCode2Icon />
+            </IconButton>
+          )}
+          {languageEnabled && (
+            <FormControl>
+              <Select value={language} onChange={(e) => setLocalLanguage(e.target.value)}>
+                {languageList.map((it) => (
+                  <MenuItem key={it.code} value={it.code}>
+                    <Box component="span" sx={{ mr: 1 }}>
+                      <CountryFlag countryCode={it.country} svg />
+                    </Box>
+                    <span className="bens-lang-name">{it.name}</span>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </>
+      }
+    >
       <div className={classes.container}>
         {!openIdForced && (
           <>

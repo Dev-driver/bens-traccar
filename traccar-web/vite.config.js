@@ -26,9 +26,9 @@ export default defineConfig(() => ({
         globPatterns: ['**/*.{js,css,html,woff,woff2,mp3}'],
       },
       manifest: {
-        short_name: '${title}',
-        name: '${description}',
-        theme_color: '${colorPrimary}',
+        short_name: 'Bens GPS',
+        name: 'Bens GPS - Suivi et gestion de flotte',
+        theme_color: '#1a1a1a',
         icons: [
           {
             src: 'pwa-64x64.png',

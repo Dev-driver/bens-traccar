@@ -62,7 +62,7 @@ const RegisterPage = () => {
   });
 
   return (
-    <LoginLayout>
+    <LoginLayout title="Inscription" subtitle="Créez votre compte de suivi de flotte">
       <div className={classes.container}>
         <div className={classes.header}>
           {!server.newServer && (

@@ -58,7 +58,10 @@ const ResetPasswordPage = () => {
   });
 
   return (
-    <LoginLayout>
+    <LoginLayout
+      title="Mot de passe oublié"
+      subtitle="Recevez un lien de réinitialisation par email"
+    >
       <div className={classes.container}>
         <div className={classes.header}>
           <IconButton color="primary" onClick={() => navigate('/login')}>
